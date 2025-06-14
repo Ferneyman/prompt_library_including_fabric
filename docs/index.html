@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Fabric Prompt Library</title>
+    <link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+    <link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Inter%3Awght%40400%3B500%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <style type="text/tailwindcss">
+        :root {
+            --primary-color: #0c7ff2; --secondary-color: #f0f2f5; --text-primary: #111418; --text-secondary: #60758a; --bg-gradient-start: #0A102C; --bg-gradient-end: #03050F; --accent-orange: #FF6B00; --text-white: #FFFFFF;
+            --ui-dark-grey: #1E293B; /* slate-800 */
+            --ui-subdued-blue: #475569; /* slate-600 */
+        }
+        body {
+            font-family: 'Inter', "Noto Sans", sans-serif;
+            background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            color: var(--text-white);
+        }
+        .icon {
+            font-family: 'Material Icons';
+            font-size: 24px;
+        }
+        .background-depth {
+            position: relative;
+            overflow: hidden;
+        }
+        .background-depth::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 200%; height: 200%;
+            background:
+                radial-gradient(circle at center, rgba(255, 107, 0, 0.02) 0%, transparent 20%),
+                radial-gradient(circle at center, rgba(42, 63, 95, 0.03) 20%, transparent 40%);
+            transform: translate(-50%, -50%);
+            animation: ripple 20s infinite linear;
+            opacity: 0.5;
+            pointer-events: none;
+            z-index: 0;
+        }
+        @keyframes ripple {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+    </style>
+</head>
+<body class="background-depth">
+    <div class="relative flex size-full min-h-screen flex-col group/design-root overflow-x-hidden">
+        <div class="layout-container flex h-full grow flex-col">
+            <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-[var(--ui-subdued-blue)] px-10 py-4 shadow-md bg-[var(--bg-gradient-start)] bg-opacity-80 backdrop-blur-sm sticky top-0 z-20" style="border-bottom-color: var(--ui-dark-grey);">
+                <div class="flex items-center gap-3 text-[var(--text-white)]">
+                    <svg class="size-8 text-[var(--accent-orange)]" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                        <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                        <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+                    </svg>
+                    <h1 class="text-[var(--text-white)] text-xl font-bold leading-tight tracking-[-0.015em]">Fabric Prompt Library</h1>
+                </div>
+            </header>
+            <main class="px-4 md:px-10 lg:px-20 flex flex-1 justify-center py-8 relative z-10">
+                <div class="layout-content-container flex flex-col w-full max-w-5xl">
+                    <div class="relative mb-6">
+                        <span class="material-icons icon absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ui-subdued-blue)]">search</span>
+                        <input class="form-input h-12 w-full rounded-lg border border-[var(--ui-subdued-blue)] bg-[var(--ui-dark-grey)] pl-10 pr-4 text-sm text-[var(--text-white)] placeholder:text-[var(--ui-subdued-blue)] focus:ring-2 focus:ring-[var(--accent-orange)] focus:ring-opacity-70" id="promptSearchInput" placeholder="Search prompts by keyword, title, or category..." type="search"/>
+                    </div>
+                    
+                    <div id="loader" class="text-center py-16 hidden">
+                         <svg class="animate-spin h-8 w-8 text-white mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                         <p class="mt-4 text-gray-400">Loading Prompts...</p>
+                    </div>
+
+                    <div id="error-message" class="p-4 hidden bg-red-900/50 text-center rounded-lg">
+                        <h3 class="font-bold text-red-300 mb-1">Error</h3>
+                        <p id="error-text" class="text-red-300 text-sm"></p>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4" id="prompt-list">
+                        <!-- Prompts will be dynamically inserted here -->
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <div id="toast" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-xl transition-opacity duration-300 opacity-0 z-50"></div>
+
+    <script>
+        // --- Configuration ---
+        const INDEX_MD_PATH = 'index.md'; // Path to your index.md file
+        let allPrompts = [];
+        let rawMdContent = ''; // To store the raw content of index.md
+
+        // --- DOM Elements ---
+        const loader = document.getElementById('loader');
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        const promptListContainer = document.getElementById('prompt-list');
+        const searchInput = document.getElementById('promptSearchInput');
+        const toast = document.getElementById('toast');
+
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', fetchAndDisplayPrompts);
+        searchInput.addEventListener('input', handleSearch);
+
+        promptListContainer.addEventListener('click', function(event) {
+            const toggleButton = event.target.closest('.toggle-button');
+            const copyButton = event.target.closest('.copy-button');
+            
+            if (toggleButton) {
+                togglePrompt(toggleButton);
+            }
+            if (copyButton) {
+                 event.stopPropagation(); // Prevent toggle when copy is clicked
+                 copyPrompt(copyButton);
+            }
+        });
+
+        // --- Core Fetching and Parsing Logic ---
+        async function fetchAndDisplayPrompts() {
+            loader.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+            try {
+                const response = await fetch(INDEX_MD_PATH);
+                if (!response.ok) throw new Error(`Failed to fetch ${INDEX_MD_PATH}. Ensure it's accessible.`);
+                rawMdContent = await response.text();
+                
+                allPrompts = parseMarkdown(rawMdContent);
+
+                if (allPrompts.length === 0) {
+                    showError("No prompts found in index.md or failed to parse.");
+                    return;
+                }
+
+                allPrompts.sort((a, b) => a.title.localeCompare(b.title));
+                renderPrompts(allPrompts);
+
+            } catch (error) {
+                console.error("Error fetching or parsing prompts:", error);
+                showError(error.message + " Check console for more details. If using file://, try a local server.");
+            } finally {
+                loader.classList.add('hidden');
+            }
+        }
+
+        function parseMarkdown(markdownContent) {
+            const prompts = [];
+            const lines = markdownContent.split('\\n');
+            let currentCategory = "General";
+            let categoryId = 0;
+
+            lines.forEach(line => {
+                const categoryMatch = line.match(/^##\\s+(.*)/);
+                if (categoryMatch) {
+                    currentCategory = categoryMatch[1].trim();
+                    categoryId++;
+                    return;
+                }
+
+                const promptMatch = line.match(/^-\\s+\\[([^\\]]+)\\]\\(([^)]+)\\)/);
+                if (promptMatch) {
+                    const title = promptMatch[1].trim();
+                    const filePath = promptMatch[2].trim();
+                    // Create a unique ID based on category and title
+                    const id = `${currentCategory.replace(/\\s+/g, '-')}-${title.replace(/\\s+/g, '-')}-${prompts.length}`;
+                    prompts.push({
+                        id: id,
+                        sourceName: currentCategory, // Using category as sourceName for consistency with original example
+                        title: title,
+                        content: null, // Will be fetched on demand
+                        description: `A prompt from the '${currentCategory}' category.`,
+                        filePath: filePath,
+                        category: currentCategory
+                    });
+                }
+            });
+            return prompts;
+        }
+        
+        async function fetchPromptContent(prompt) {
+            if (prompt.content) return prompt.content; // Already fetched
+
+            try {
+                // Adjust path if necessary, assuming fabric_ui_shell.html is in 'fabric/'
+                // and paths in index.md are relative to the 'fabric/' directory.
+                // If index.md paths are relative to workspace root, this might need adjustment.
+                const response = await fetch(prompt.filePath); 
+                if (!response.ok) {
+                    console.error(`Failed to fetch content for ${prompt.title} from ${prompt.filePath}`);
+                    return "Error: Could not load prompt content.";
+                }
+                const textContent = await response.text();
+                prompt.content = textContent; // Cache the content
+                return textContent;
+            } catch (error) {
+                console.error(`Error fetching prompt content for ${prompt.title}:`, error);
+                return "Error: Could not load prompt content due to a network or parsing issue.";
+            }
+        }
+
+
+        // --- UI Rendering and Interaction ---
+        function renderPrompts(promptsToRender) {
+            promptListContainer.innerHTML = '';
+            if (promptsToRender.length === 0) {
+                promptListContainer.innerHTML = `<p class="text-center text-[var(--ui-subdued-blue)]">No prompts match your search.</p>`;
+                return;
+            }
+            promptsToRender.forEach((prompt, index) => {
+                const promptElement = document.createElement('div');
+                promptElement.className = 'prompt-container group/prompt bg-[var(--ui-dark-grey)] bg-opacity-70 rounded-lg shadow-md border border-[var(--ui-subdued-blue)] hover:border-[var(--accent-orange)] hover:shadow-xl transition-all duration-300 ease-in-out';
+                promptElement.dataset.promptId = prompt.id;
+                
+                promptElement.innerHTML = `
+                    <div class="flex items-center gap-4 px-6 py-4 cursor-pointer toggle-button">
+                        <div class="flex-grow">
+                            <div class="flex items-center gap-3">
+                                <p class="text-[var(--text-white)] text-base font-semibold leading-normal">${index + 1}. ${escapeHtml(prompt.title)}</p>
+                                <span class="text-xs bg-gray-600 text-gray-300 px-2 py-1 rounded-full whitespace-nowrap">${escapeHtml(prompt.category)}</span>
+                            </div>
+                            <p class="text-[var(--ui-subdued-blue)] text-sm font-normal leading-normal line-clamp-1 group-hover/prompt:line-clamp-none transition-all">${escapeHtml(prompt.description)}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button class="copy-button flex items-center justify-center gap-1 rounded-md h-9 w-9 p-0 bg-transparent text-[var(--ui-subdued-blue)] hover:bg-[var(--accent-orange)] hover:text-[var(--text-white)] transition-colors" title="Copy Full Prompt (loads content first)">
+                                <span class="material-icons icon !text-lg">content_copy</span>
+                            </button>
+                            <button class="toggle-button flex items-center justify-center gap-1 rounded-md h-9 px-3 bg-[var(--ui-subdued-blue)] text-[var(--text-white)] text-xs font-medium hover:bg-[var(--accent-orange)] transition-colors">
+                                <span class="truncate">View</span>
+                                <span class="material-icons icon !text-lg transition-transform duration-300 group-data-[open=true]/prompt:rotate-180">expand_more</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="details-content hidden h-0 overflow-hidden transition-all duration-300 ease-in-out data-[open=true]:h-auto data-[open=true]:py-4 data-[open=true]:px-6 border-t border-[var(--ui-subdued-blue)]">
+                        <div class="prompt-content-loader text-center p-4 text-[var(--ui-subdued-blue)]">Loading content...</div>
+                        <pre class="prompt-text-display text-[var(--ui-subdued-blue)] text-sm mb-4 whitespace-pre-wrap font-mono hidden"></pre>
+                        <button class="copy-button-details flex items-center justify-center gap-2 rounded-md h-9 px-4 bg-[var(--accent-orange)] text-white text-sm font-medium hover:bg-opacity-90 transition-colors hidden">
+                            <span class="material-icons icon !text-base">content_copy</span>
+                            <span class="truncate">Copy Full Prompt</span>
+                        </button>
+                    </div>
+                `;
+                promptListContainer.appendChild(promptElement);
+            });
+        }
+
+        async function togglePrompt(button) {
+            const promptContainer = button.closest('.prompt-container');
+            const contentDiv = promptContainer.querySelector('.details-content');
+            const isOpen = contentDiv.dataset.open === 'true';
+            
+            contentDiv.dataset.open = !isOpen;
+            promptContainer.dataset.open = !isOpen;
+
+            if (!isOpen) { // If opening
+                const promptId = promptContainer.dataset.promptId;
+                const prompt = allPrompts.find(p => p.id === promptId);
+                if (!prompt) return;
+
+                const loaderElement = contentDiv.querySelector('.prompt-content-loader');
+                const textDisplayElement = contentDiv.querySelector('.prompt-text-display');
+                const copyDetailsButton = contentDiv.querySelector('.copy-button-details');
+
+                if (!prompt.content) { // Content not yet fetched
+                    loaderElement.classList.remove('hidden');
+                    textDisplayElement.classList.add('hidden');
+                    copyDetailsButton.classList.add('hidden');
+
+                    const fetchedContent = await fetchPromptContent(prompt);
+                    textDisplayElement.textContent = fetchedContent;
+                    
+                    loaderElement.classList.add('hidden');
+                    textDisplayElement.classList.remove('hidden');
+                    if (fetchedContent && !fetchedContent.startsWith("Error:")) {
+                        copyDetailsButton.classList.remove('hidden');
+                    }
+                } else { // Content already fetched
+                    textDisplayElement.textContent = prompt.content;
+                    loaderElement.classList.add('hidden');
+                    textDisplayElement.classList.remove('hidden');
+                     if (prompt.content && !prompt.content.startsWith("Error:")) {
+                        copyDetailsButton.classList.remove('hidden');
+                    }
+                }
+            }
+        }
+
+        async function copyPrompt(button) {
+            const promptContainer = button.closest('.prompt-container');
+            const promptId = promptContainer.dataset.promptId;
+            const prompt = allPrompts.find(p => p.id === promptId);
+            if (!prompt) return;
+
+            let contentToCopy = prompt.content;
+            if (!contentToCopy) { // If content not loaded yet (e.g. main card copy button)
+                showToast('Loading content to copy...');
+                contentToCopy = await fetchPromptContent(prompt);
+                 // Update the details view if it happens to be open
+                const contentDiv = promptContainer.querySelector('.details-content');
+                if (contentDiv && contentDiv.dataset.open === 'true') {
+                    const textDisplayElement = contentDiv.querySelector('.prompt-text-display');
+                    textDisplayElement.textContent = contentToCopy;
+                    contentDiv.querySelector('.prompt-content-loader').classList.add('hidden');
+                    textDisplayElement.classList.remove('hidden');
+                    if (contentToCopy && !contentToCopy.startsWith("Error:")) {
+                         contentDiv.querySelector('.copy-button-details').classList.remove('hidden');
+                    }
+                }
+            }
+            
+            if (contentToCopy && !contentToCopy.startsWith("Error:")) {
+                navigator.clipboard.writeText(contentToCopy).then(() => {
+                    showToast('Prompt copied!');
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                    showToast('Copy failed! See console.');
+                });
+            } else {
+                showToast('Error: Content not available to copy.');
+            }
+        }
+
+        function handleSearch() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filteredPrompts = allPrompts.filter(prompt => {
+                const title = prompt.title.toLowerCase();
+                const category = prompt.category.toLowerCase();
+                // Basic content search if content is already loaded (optional, can be slow if many prompts are open)
+                // const content = prompt.content ? prompt.content.toLowerCase() : ""; 
+                return title.includes(searchTerm) || category.includes(searchTerm); // || content.includes(searchTerm);
+            });
+            renderPrompts(filteredPrompts);
+        }
+        
+        function showError(message) {
+            errorMessage.classList.remove('hidden');
+            errorText.textContent = message;
+        }
+        
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') return '';
+            return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.remove('opacity-0');
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
