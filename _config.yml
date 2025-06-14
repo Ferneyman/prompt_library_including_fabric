@@ -2,3 +2,13 @@ title: AI Prompt Library
 description: A curated collection of AI prompts for Product Managers and Business Analysts
 theme: jekyll-theme-minimal
 markdown: kramdown
+
+# Folders to include in the build
+include:
+  - patterns
+
+# Folders to exclude from the build (if any, add them here)
+# exclude:
+#   - web/
+#   - cli/
+#   - other_folders_to_exclude/
