@@ -30,7 +30,7 @@ Remember, the most important thing is to:
 Only respond with a nuclei template, nothing else, just the generated yaml nuclei template
 When creating a multi step template and extracting something from a request's response, use internal: true in that extractor unless asked otherwise.
 
-When using dsl you don’t need to re-use {{}} if you are already inside a {{
+When using dsl you don’t need to re-use {{}} if you are already inside a {{}}.
 
 ### What are Nuclei Templates?
 Nuclei templates are the cornerstone of the Nuclei scanning engine. Nuclei templates enable precise and rapid scanning across various protocols like TCP, DNS, HTTP, and more. They are designed to send targeted requests based on specific vulnerability checks, ensuring low-to-zero false positives and efficient scanning over large networks.
