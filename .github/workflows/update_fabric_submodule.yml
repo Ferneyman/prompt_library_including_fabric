@@ -1,0 +1,44 @@
+name: Update Fabric Submodule
+
+on:
+  schedule:
+    # Runs daily at 03:00 UTC. You can change this cron expression.
+    # See https://crontab.guru/ for help with cron expressions.
+    - cron: '0 3 * * *'
+  workflow_dispatch: # Allows manual triggering from the Actions tab
+
+jobs:
+  update_submodule:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # We need to fetch the history to be able to push
+          fetch-depth: 0
+          # If you have submodules that depend on other submodules, use 'recursive'
+          # For this case, 'true' is enough as we are updating the top-level one.
+          submodules: 'true' 
+
+      - name: Update Fabric submodule
+        run: |
+          git submodule update --remote --merge fabric_src
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          
+          # Check if the submodule reference has changed
+          # (i.e., if fabric_src was updated and needs to be committed)
+          if ! git diff --quiet HEAD -- fabric_src; then
+            echo "Fabric submodule updated. Committing and pushing changes..."
+            git add fabric_src
+            git commit -m "Scheduled: Update Fabric patterns submodule"
+            # Assumes your default branch is 'main'. Change if it's 'master' or other.
+            git push origin HEAD:main 
+          else
+            echo "Fabric submodule is already up to date. No changes to commit."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
