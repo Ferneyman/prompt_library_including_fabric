@@ -5,7 +5,8 @@ markdown: kramdown
 
 # Folders to include in the build
 include:
-  - patterns
+  - fabric_src/patterns # Updated to include patterns from the submodule
+  - my_prompts # Include custom prompts
 
 # Folders to exclude from the build (if any, add them here)
 # exclude:
