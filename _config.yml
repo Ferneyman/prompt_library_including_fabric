@@ -8,8 +8,9 @@ include:
   - fabric_src/patterns # Updated to include patterns from the submodule
   - my_prompts # Include custom prompts
 
-# Folders to exclude from the build (if any, add them here)
-# exclude:
+# Folders to exclude from the build
+exclude:
+  - fabric_src/patterns/write_nuclei_template_rule/system.md
 #   - web/
 #   - cli/
 #   - other_folders_to_exclude/
