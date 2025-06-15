@@ -4,84 +4,179 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fabric Prompt Library</title>
-    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
-    <link rel="stylesheet" href="css/style.css">
+    
     <style>
-        :root {
-            --primary-color: #0c7ff2; --secondary-color: #f0f2f5; --text-primary: #111418; --text-secondary: #60758a; --bg-gradient-start: #0A102C; --bg-gradient-end: #03050F; --accent-orange: #FF6B00; --text-white: #FFFFFF;
-            --ui-dark-grey: #1E293B; /* slate-800 */
-            --ui-subdued-blue: #475569; /* slate-600 */
-        }
         body {
-            font-family: 'Inter', "Noto Sans", sans-serif;
-            background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
-            color: var(--text-white);
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5; /* Light gray background */
+            color: #1c1e21; /* Dark gray text */
+            line-height: 1.6;
         }
-        .icon {
-            font-family: 'Material Icons';
-            font-size: 24px;
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #ffffff; /* White content background */
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        .background-depth {
-            position: relative;
-            overflow: hidden;
+        h1 {
+            color: #1877f2; /* Blue heading */
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e4e6eb; /* Light border */
+            padding-bottom: 15px;
         }
-        .background-depth::after {
-            content: "";
-            position: absolute;
-            top: 50%;
+        h2 {
+            color: #3578e5; /* Darker blue for subheadings */
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ccd0d5; /* Lighter border for H2 */
+            padding-bottom: 8px;
+        }
+        h3 {
+            color: #1c1e21; /* Dark gray for sub-subheadings */
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        li {
+            margin-bottom: 12px;
+            padding: 12px;
+            background-color: #e7f3ff; /* Light blue list item background */
+            border-radius: 6px;
+            border: 1px solid #cce0ff; /* Lighter blue border */
+        }
+        li a {
+            text-decoration: none;
+            color: #05386b; /* Dark blue link */
+            font-weight: 500;
+        }
+        li a:hover {
+            text-decoration: underline;
+            color: #0056b3; /* Darker blue on hover */
+        }
+        p.intro, p.usage-intro {
+            text-align: center;
+            color: #606770; /* Medium gray for intro text */
+            margin-bottom: 20px;
+        }
+        .toc { /* Table of Contents specific styling */
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #e9ecef; /* Very light gray for TOC background */
+            border-radius: 6px;
+        }
+        .toc h2 {
+            text-align: left;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .toc ul {
+            margin-left: 20px;
+        }
+        .toc a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        /* Loader and Error Message Styles */
+        #loader {
+            display: none;
+            position: fixed;
             left: 50%;
-            width: 200%; height: 200%;
-            background:
-                radial-gradient(circle at center, rgba(255, 107, 0, 0.02) 0%, transparent 20%),
-                radial-gradient(circle at center, rgba(42, 63, 95, 0.03) 20%, transparent 40%);
+            top: 50%;
             transform: translate(-50%, -50%);
-            animation: ripple 20s infinite linear;
-            opacity: 0.5;
-            pointer-events: none;
-            z-index: 0;
+            z-index: 1000;
         }
-        @keyframes ripple {
-            0% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -50%) scale(1.2); }
-            100% { transform: translate(-50%, -50%) scale(1); }
+        #error-message {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid #dc3545;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        #error-message h3 {
+            margin-top: 0;
+            color: #dc3545;
+        }
+        #error-message p {
+            margin: 5px 0 0;
+            color: #333;
+        }
+        /* Toast Notification */
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: opacity 0.3s ease;
+            opacity: 0;
+            z-index: 1000;
+        }
+        #toast.show {
+            opacity: 1;
         }
     </style>
 </head>
-<body class="background-depth">
-    <div class="relative flex size-full min-h-screen flex-col group/design-root overflow-x-hidden">
-        <div class="layout-container flex h-full grow flex-col">
-            <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-[var(--ui-subdued-blue)] px-10 py-4 shadow-md bg-[var(--bg-gradient-start)] bg-opacity-80 backdrop-blur-sm sticky top-0 z-20" style="border-bottom-color: var(--ui-dark-grey);">
-                <div class="flex items-center gap-3 text-[var(--text-white)]">
-                    <svg class="size-8 text-[var(--accent-orange)]" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-                        <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-                        <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
-                    </svg>
-                    <h1 class="text-[var(--text-white)] text-xl font-bold leading-tight tracking-[-0.015em]">Fabric Prompt Library</h1>
-                </div>
-            </header>
-            <main class="px-4 md:px-10 lg:px-20 flex flex-1 justify-center py-8 relative z-10">
-                <div class="layout-content-container flex flex-col w-full max-w-5xl">
-                    <div class="relative mb-6">
-                        <span class="material-icons icon absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ui-subdued-blue)]">search</span>
-                        <input class="form-input h-12 w-full rounded-lg border border-[var(--ui-subdued-blue)] bg-[var(--ui-dark-grey)] pl-10 pr-4 text-sm text-[var(--text-white)] placeholder:text-[var(--ui-subdued-blue)] focus:ring-2 focus:ring-[var(--accent-orange)] focus:ring-opacity-70" id="promptSearchInput" placeholder="Search prompts by keyword, title, or category..." type="search"/>
-                    </div>
-                    
-                    <div id="loader" class="text-center py-16 hidden">
-                         <svg class="animate-spin h-8 w-8 text-white mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                         <p class="mt-4 text-gray-400">Loading Prompts...</p>
-                    </div>
+<body>
+    <div id="app" class="container mx-auto">
+        <div class="toc" id="table-of-contents">
+            <h2 class="text-xl font-bold mb-4">Table of Contents</h2>
+            <ul>
+                <!-- Dynamic TOC will be inserted here -->
+            </ul>
+        </div>
+        <h1 class="text-3xl font-extrabold mb-6">Fabric Prompt Library</h1>
+        <p class="intro text-lg mb-4">A curated collection of prompts to supercharge your creative projects.</p>
+        
+        <div class="mb-6">
+            <input type="text" id="promptSearchInput" placeholder="Search prompts..." class="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
 
-                    <div id="error-message" class="p-4 hidden bg-red-900/50 text-center rounded-lg">
+        <div id="loader" class="flex items-center justify-center">
+            <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v16a8 8 0 01-8-8z"></path>
+            </svg>
+        </div>
+
+        <div id="error-message" class="hidden">
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg" role="alert">
+                <div class="flex">
+                    <div class="py-1">
+                        <svg class="w-5 h-5 text-red-500 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <path stroke="currentColor" stroke-width="2" d="M12 8v4m0 4h.01M12 4a8 8 0 100 16 8 8 0 000-16z"></path>
+                        </svg>
+                    </div>
+                    <div>
                         <h3 class="font-bold text-red-300 mb-1">Error</h3>
                         <p id="error-text" class="text-red-300 text-sm"></p>
                     </div>
-
-                    <div class="grid grid-cols-1 gap-4" id="prompt-list">
-                        <!-- Prompts will be dynamically inserted here -->
-                    </div>
                 </div>
-            </main>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4" id="prompt-list">
+            <!-- Prompts will be dynamically inserted here -->
         </div>
     </div>
     <div id="toast" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-xl transition-opacity duration-300 opacity-0 z-50"></div>
