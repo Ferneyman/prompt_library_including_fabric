@@ -4,452 +4,329 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fabric Prompt Library</title>
-    
     <style>
         body {
-            font-family: sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
             margin: 0;
             padding: 20px;
-            background-color: #f0f2f5; /* Light gray background */
-            color: #1c1e21; /* Dark gray text */
+            background-color: #f0f2f5;
+            color: #1c1e21;
             line-height: 1.6;
         }
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 20px auto;
-            padding: 20px;
-            background-color: #ffffff; /* White content background */
+            padding: 25px;
+            background-color: #ffffff;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
         h1 {
-            color: #1877f2; /* Blue heading */
+            color: #1877f2; /* Facebook Blue */
             text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #e4e6eb; /* Light border */
+            margin-bottom: 20px;
             padding-bottom: 15px;
+            border-bottom: 2px solid #e4e6eb;
+            font-size: 2.2em;
         }
         h2 {
-            color: #3578e5; /* Darker blue for subheadings */
-            margin-top: 30px;
+            color: #3578e5; /* Darker Blue */
+            margin-top: 35px;
             margin-bottom: 15px;
-            border-bottom: 1px solid #ccd0d5; /* Lighter border for H2 */
-            padding-bottom: 8px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ccd0d5;
+            font-size: 1.8em;
         }
         h3 {
-            color: #1c1e21; /* Dark gray for sub-subheadings */
-            margin-top: 20px;
-            margin-bottom: 10px;
+            color: #1c1e21; /* Dark Gray */
+            margin-top: 25px;
+            margin-bottom: 12px;
+            font-size: 1.4em;
         }
         ul {
             list-style-type: none;
             padding-left: 0;
         }
         li {
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             padding: 12px;
-            background-color: #e7f3ff; /* Light blue list item background */
+            background-color: #e7f3ff; /* Light Blue Background */
             border-radius: 6px;
-            border: 1px solid #cce0ff; /* Lighter blue border */
+            border: 1px solid #cce0ff; /* Lighter Blue Border */
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        li:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
         }
         li a {
             text-decoration: none;
-            color: #05386b; /* Dark blue link */
+            color: #05386b; /* Dark Blue Link */
             font-weight: 500;
+            display: block; /* Make the whole area clickable */
         }
         li a:hover {
-            text-decoration: underline;
-            color: #0056b3; /* Darker blue on hover */
+            color: #0056b3; /* Darker Blue on Hover */
         }
         p.intro, p.usage-intro {
             text-align: center;
-            color: #606770; /* Medium gray for intro text */
-            margin-bottom: 20px;
+            color: #606770; /* Medium Gray */
+            margin-bottom: 25px;
+            font-size: 1.1em;
         }
-        .toc { /* Table of Contents specific styling */
+        .toc {
             margin-bottom: 30px;
-            padding: 15px;
-            background-color: #e9ecef; /* Very light gray for TOC background */
-            border-radius: 6px;
+            padding: 20px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            border: 1px solid #d6d8db;
         }
         .toc h2 {
             text-align: left;
-            font-size: 1.5rem;
-            margin-bottom: 10px;
+            font-size: 1.6em;
+            margin-top: 0;
+            margin-bottom: 15px;
             color: #333;
+            border-bottom: none;
         }
         .toc ul {
-            margin-left: 20px;
+            padding-left: 20px;
+            list-style-type: disc;
+        }
+        .toc ul li {
+            background-color: transparent;
+            border: none;
+            padding: 5px 0;
         }
         .toc a {
             color: #007bff;
-            text-decoration: none;
         }
         .toc a:hover {
             text-decoration: underline;
         }
-        /* Loader and Error Message Styles */
-        #loader {
-            display: none;
-            position: fixed;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1000;
-        }
-        #error-message {
-            display: none;
-            position: fixed;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1000;
-            background-color: rgba(255, 255, 255, 0.9);
-            border: 1px solid #dc3545;
+        .quick-links {
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
             border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-        #error-message h3 {
+        .quick-links h2 {
+            font-size: 1.5em;
+            color: #495057;
             margin-top: 0;
-            color: #dc3545;
         }
-        #error-message p {
-            margin: 5px 0 0;
-            color: #333;
+        .usage-section {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #fffbe6; /* Light yellow */
+            border: 1px solid #ffeeba; /* Yellow border */
+            border-radius: 8px;
         }
-        /* Toast Notification */
-        #toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: #28a745;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            transition: opacity 0.3s ease;
-            opacity: 0;
-            z-index: 1000;
+        .usage-section h2 {
+            color: #856404; /* Dark yellow/brown */
         }
-        #toast.show {
-            opacity: 1;
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e4e6eb;
+            font-size: 0.9em;
+            color: #606770;
         }
     </style>
 </head>
 <body>
-    <div id="app" class="container mx-auto">
-        <div class="toc" id="table-of-contents">
-            <h2 class="text-xl font-bold mb-4">Table of Contents</h2>
+    <div class="container">
+        <h1>AI Prompt Library for Product & Business Professionals</h1>
+        <p class="intro">Welcome to your centralized prompt library, offering carefully curated AI prompts for Product Managers, Business Analysts, and other business professionals.</p>
+
+        <div class="toc">
+            <h2>Table of Contents</h2>
             <ul>
-                <!-- Dynamic TOC will be inserted here -->
+                <li><a href="#product-management">Product Management</a></li>
+                <li><a href="#business-analysis">Business Analysis</a></li>
+                <li><a href="#communication-documentation">Communication & Documentation</a></li>
+                <li><a href="#data-visualization">Data & Visualization</a></li>
+                <li><a href="#process-improvement">Process Improvement</a></li>
+                <li><a href="#research-insights">Research & Insights</a></li>
+                <li><a href="#technical-knowledge">Technical Knowledge</a></li>
+                <li><a href="#personal-development">Personal Development</a></li>
             </ul>
         </div>
-        <h1 class="text-3xl font-extrabold mb-6">Fabric Prompt Library</h1>
-        <p class="intro text-lg mb-4">A curated collection of prompts to supercharge your creative projects.</p>
-        
-        <div class="mb-6">
-            <input type="text" id="promptSearchInput" placeholder="Search prompts..." class="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+        <div class="usage-section">
+            <h2>How to Use This Library</h2>
+            <ol>
+                <li>Browse categories below.</li>
+                <li>Click on a prompt to open the markdown file directly.</li>
+                <li>Copy the prompt text from the markdown file for use with your AI assistant of choice.</li>
+            </ol>
         </div>
 
-        <div id="loader" class="flex items-center justify-center">
-            <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v16a8 8 0 01-8-8z"></path>
-            </svg>
-        </div>
+        <section id="product-management">
+            <h2>Product Management</h2>
+            <h3>Requirements & Development</h3>
+            <ul>
+                <li><a href="../fabric_src/patterns/create_prd/system.md" target="_blank">Create Product Requirements Document</a></li>
+                <li><a href="../fabric_src/patterns/create_user_story/system.md" target="_blank">Create User Stories</a></li>
+                <li><a href="../fabric_src/patterns/identify_job_stories/system.md" target="_blank">Identify Job Stories</a></li>
+                <li><a href="../fabric_src/patterns/analyze_product_feedback/system.md" target="_blank">Analyze Product Feedback</a></li>
+                <li><a href="../fabric_src/patterns/create_design_document/system.md" target="_blank">Create Design Document</a></li>
+            </ul>
+            <h3>Strategy & Analysis</h3>
+            <ul>
+                <li><a href="../fabric_src/patterns/extract_business_ideas/system.md" target="_blank">Extract Business Ideas</a></li>
+                <li><a href="../fabric_src/patterns/analyze_risk/system.md" target="_blank">Analyze Risk</a></li>
+                <li><a href="../fabric_src/patterns/analyze_proposition/system.md" target="_blank">Analyze Value Propositions</a></li>
+                <li><a href="../fabric_src/patterns/compare_and_contrast/system.md" target="_blank">Compare Products/Features</a></li>
+                <li><a href="../fabric_src/patterns/analyze_tech_impact/system.md" target="_blank">Assess Technology Impact</a></li>
+                <li><a href="../fabric_src/patterns/create_ai_jobs_analysis/system.md" target="_blank">Analyze AI Jobs Impact</a></li>
+            </ul>
+            <h3>Sales & Business Development</h3>
+            <ul>
+                <li><a href="../fabric_src/patterns/analyze_sales_call/system.md" target="_blank">Analyze Sales Calls</a></li>
+                <li><a href="../fabric_src/patterns/create_hormozi_offer/system.md" target="_blank">Create High-Converting Offers</a></li>
+                <li><a href="../fabric_src/patterns/analyze_cfp_submission/system.md" target="_blank">Evaluate Conference Proposals</a></li>
+            </ul>
+            <h3>Legal & Compliance</h3>
+            <ul>
+                <li><a href="../fabric_src/patterns/check_agreement/system.md" target="_blank">Check Agreements & Contracts</a></li>
+                <li><a href="../fabric_src/patterns/analyze_bill/system.md" target="_blank">Analyze Legislation</a></li>
+                <li><a href="../fabric_src/patterns/summarize_legislation/system.md" target="_blank">Summarize Legislation</a></li>
+            </ul>
+        </section>
 
-        <div id="error-message" class="hidden">
-            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg" role="alert">
-                <div class="flex">
-                    <div class="py-1">
-                        <svg class="w-5 h-5 text-red-500 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <path stroke="currentColor" stroke-width="2" d="M12 8v4m0 4h.01M12 4a8 8 0 100 16 8 8 0 000-16z"></path>
-                        </svg>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-red-300 mb-1">Error</h3>
-                        <p id="error-text" class="text-red-300 text-sm"></p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <section id="business-analysis">
+            <h2>Business Analysis</h2>
+            <h3>Data Analysis</h3>
+            <ul>
+                <li><a href="../fabric_src/patterns/extract_insights/system.md" target="_blank">Extract Insights</a></li>
+                <li><a href="../fabric_src/patterns/analyze_presentation/system.md" target="_blank">Analyze Presentations</a></li>
+                <li><a href="../fabric_src/patterns/analyze_answers/system.md" target="_blank">Evaluate Responses & Answers</a></li>
+                <li><a href="../fabric_src/patterns/analyze_candidates/system.md" target="_blank">Assess Candidates</a></li>
+                <li><a href="../fabric_src/patterns/extract_patterns/system.md" target="_blank">Identify Patterns & Themes</a></li>
+            </ul>
+            <h3>Strategic Planning</h3>
+            <ul>
+                <li><a href="../fabric_src/patterns/prepare_7s_strategy/system.md" target="_blank">7S Strategy Framework</a></li>
+                <li><a href="../fabric_src/patterns/create_better_frame/system.md" target="_blank">Problem Reframing</a></li>
+                <li><a href="../fabric_src/patterns/extract_primary_problem/system.md" target="_blank">Extract Core Problems</a></li>
+                <li><a href="../fabric_src/patterns/extract_primary_solution/system.md" target="_blank">Extract Primary Solutions</a></li>
+            </ul>
+        </section>
 
-        <div class="grid grid-cols-1 gap-4" id="prompt-list">
-            <!-- Prompts will be dynamically inserted here -->
+        <section id="communication-documentation">
+            <h2>Communication & Documentation</h2>
+            <h3>Meeting Management</h3>
+            <ul>
+                <li><a href="../fabric_src/patterns/summarize_meeting/system.md" target="_blank">Summarize Meetings</a></li>
+                <li><a href="../fabric_src/patterns/summarize_board_meeting/system.md" target="_blank">Summarize Board Meetings</a></li>
+                <li><a href="../fabric_src/patterns/transcribe_minutes/system.md" target="_blank">Create Meeting Minutes</a></li>
+            </ul>
+            <h3>Content Development</h3>
+            <ul>
+                <li><a href="../fabric_src/patterns/create_formal_email/system.md" target="_blank">Create Formal Emails</a></li>
+                <li><a href="../fabric_src/patterns/create_keynote/system.md" target="_blank">Design Keynote Presentations</a></li>
+                <li><a href="../fabric_src/patterns/create_newsletter_entry/system.md" target="_blank">Write Newsletter Content</a></li>
+                <li><a href="../fabric_src/patterns/improve_writing/system.md" target="_blank">Improve Writing Quality</a></li>
+                <li><a href="../fabric_src/patterns/convert_to_markdown/system.md" target="_blank">Convert to Markdown</a></li>
+                <li><a href="../fabric_src/patterns/Detailed-Training-Guide-From-Documentation/system.md" target="_blank">Create Training Guides</a></li>
+                <li><a href="../fabric_src/patterns/Grammar-Genie/system.md" target="_blank">Grammar Enhancement</a></li>
+            </ul>
+        </section>
+
+        <section id="data-visualization">
+            <h2>Data & Visualization</h2>
+            <h3>Visual Analytics</h3>
+            <ul>
+                <li><a href="../fabric_src/patterns/create_mermaid_visualization/system.md" target="_blank">Create Mermaid Diagrams</a></li>
+                <li><a href="../fabric_src/patterns/create_visualization/system.md" target="_blank">General Data Visualization</a></li>
+                <li><a href="../fabric_src/patterns/create_markmap_visualization/system.md" target="_blank">Create Mind Maps</a></li>
+                <li><a href="../fabric_src/patterns/create_excalidraw_visualization/system.md" target="_blank">Create Freehand Diagrams</a></li>
+                <li><a href="../fabric_src/patterns/create_graph_from_input/system.md" target="_blank">Generate Graphs From Data</a></li>
+            </ul>
+            <h3>Reporting & Summaries</h3>
+            <ul>
+                <li><a href="../fabric_src/patterns/create_summary/system.md" target="_blank">Comprehensive Summaries</a></li>
+                <li><a href="../fabric_src/patterns/create_5_sentence_summary/system.md" target="_blank">5-Sentence Summaries</a></li>
+                <li><a href="../fabric_src/patterns/create_micro_summary/system.md" target="_blank">Micro Summaries</a></li>
+            </ul>
+        </section>
+
+        <section id="process-improvement">
+            <h2>Process Improvement</h2>
+            <h3>Agile & Development</h3>
+            <ul>
+                <li><a href="../fabric_src/patterns/agility_story/system.md" target="_blank">Create Agile Stories</a></li>
+                <li><a href="../fabric_src/patterns/create_coding_feature/system.md" target="_blank">Define Technical Features</a></li>
+                <li><a href="../fabric_src/patterns/create_loe_document/system.md" target="_blank">Create LOE Documents</a></li>
+            </ul>
+            <h3>Quality & Assessment</h3>
+            <ul>
+                <li><a href="../fabric_src/patterns/analyze_mistakes/system.md" target="_blank">Analyze Mistakes & Failures</a></li>
+                <li><a href="../fabric_src/patterns/improve_prompt/system.md" target="_blank">Improve Prompts</a></li>
+                <li><a href="../fabric_src/patterns/rate_value/system.md" target="_blank">Evaluate Value Propositions</a></li>
+                <li><a href="../fabric_src/patterns/judge_output/system.md" target="_blank">Judge Output Quality</a></li>
+            </ul>
+        </section>
+
+        <section id="research-insights">
+            <h2>Research & Insights</h2>
+            <h3>Content Analysis</h3>
+            <ul>
+                <li><a href="../fabric_src/patterns/analyze_paper/system.md" target="_blank">Academic Paper Analysis</a></li>
+                <li><a href="../fabric_src/patterns/extract_article_wisdom/system.md" target="_blank">Extract Article Wisdom</a></li>
+                <li><a href="../fabric_src/patterns/extract_book_ideas/system.md" target="_blank">Extract Book Ideas</a></li>
+                <li><a href="../fabric_src/patterns/extract_recommendations/system.md" target="_blank">Extract Recommendations</a></li>
+            </ul>
+            <h3>Innovation & Ideation</h3>
+            <ul>
+                <li><a href="../fabric_src/patterns/create_aphorisms/system.md" target="_blank">Create Aphorisms</a></li>
+                <li><a href="../fabric_src/patterns/create_idea_compass/system.md" target="_blank">Idea Compass Framework</a></li>
+                <li><a href="../fabric_src/patterns/extract_controversial_ideas/system.md" target="_blank">Extract Controversial Ideas</a></li>
+                <li><a href="../fabric_src/patterns/extract_extraordinary_claims/system.md" target="_blank">Identify Breakthrough Claims</a></li>
+            </ul>
+        </section>
+
+        <section id="technical-knowledge">
+            <h2>Technical Knowledge</h2>
+            <h3>Security & Risk</h3>
+            <ul>
+                <li><a href="../fabric_src/patterns/analyze_threat_report/system.md" target="_blank">Analyze Threat Reports</a></li>
+                <li><a href="../fabric_src/patterns/create_stride_threat_model/system.md" target="_blank">Create STRIDE Threat Models</a></li>
+                <li><a href="../fabric_src/patterns/ask_secure_by_design_questions/system.md" target="_blank">Security Design Questions</a></li>
+            </ul>
+            <h3>Technical Analysis</h3>
+            <ul>
+                <li><a href="../fabric_src/patterns/explain_code/system.md" target="_blank">Explain Code</a></li>
+                <li><a href="../fabric_src/patterns/explain_docs/system.md" target="_blank">Clarify Technical Documentation</a></li>
+                <li><a href="../fabric_src/patterns/analyze_logs/system.md" target="_blank">Analyze System Logs</a></li>
+                <li><a href="../fabric_src/patterns/AWS-AI-ML-solutions-architect/system.md" target="_blank">AWS Solutions Architecture</a></li>
+            </ul>
+        </section>
+
+        <section id="personal-development">
+            <h2>Personal Development</h2>
+            <h3>Knowledge Management</h3>
+            <ul>
+                <li><a href="../fabric_src/patterns/extract_wisdom/system.md" target="_blank">Extract Wisdom</a></li>
+                <li><a href="../fabric_src/patterns/create_reading_plan/system.md" target="_blank">Create Reading Plans</a></li>
+                <li><a href="../fabric_src/patterns/create_quiz/system.md" target="_blank">Generate Quizzes</a></li>
+                <li><a href="../fabric_src/patterns/solve_with_cot/system.md" target="_blank">Problem-Solving With Chain of Thought</a></li>
+                <li><a href="../fabric_src/patterns/create_flash_cards/system.md" target="_blank">Create Flashcards</a></li>
+            </ul>
+            <h3>Career Growth</h3>
+            <ul>
+                <li><a href="../fabric_src/patterns/answer_interview_question/system.md" target="_blank">Answer Interview Questions</a></li>
+                <li><a href="../fabric_src/patterns/Career-Transition-Claude/system.md" target="_blank">Career Transition Guidance</a></li>
+                <li><a href="../fabric_src/patterns/Financial-Tracking-System-Assistant/system.md" target="_blank">Personal Finance Management</a></li>
+            </ul>
+        </section>
+
+        <div class="footer">
+            <p>*This library is regularly updated with new prompts and refinements.*</p>
+            <p>&copy; 2024 Your Name/Company. All rights reserved.</p>
         </div>
     </div>
-    <div id="toast" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-xl transition-opacity duration-300 opacity-0 z-50"></div>
-
-    <script>
-        // --- Configuration ---
-        const INDEX_MD_PATH = 'index.md'; // Path to your index.md file
-        let allPrompts = [];
-        let rawMdContent = ''; // To store the raw content of index.md
-
-        // --- DOM Elements ---
-        const loader = document.getElementById('loader');
-        const errorMessage = document.getElementById('error-message');
-        const errorText = document.getElementById('error-text');
-        const promptListContainer = document.getElementById('prompt-list');
-        const searchInput = document.getElementById('promptSearchInput');
-        const toast = document.getElementById('toast');
-
-        // --- Event Listeners ---
-        document.addEventListener('DOMContentLoaded', fetchAndDisplayPrompts);
-        searchInput.addEventListener('input', handleSearch);
-
-        promptListContainer.addEventListener('click', function(event) {
-            const toggleButton = event.target.closest('.toggle-button');
-            const copyButton = event.target.closest('.copy-button');
-            
-            if (toggleButton) {
-                togglePrompt(toggleButton);
-            }
-            if (copyButton) {
-                 event.stopPropagation(); // Prevent toggle when copy is clicked
-                 copyPrompt(copyButton);
-            }
-        });
-
-        // --- Core Fetching and Parsing Logic ---
-        async function fetchAndDisplayPrompts() {
-            loader.classList.remove('hidden');
-            errorMessage.classList.add('hidden');
-            try {
-                const response = await fetch(INDEX_MD_PATH);
-                if (!response.ok) throw new Error(`Failed to fetch ${INDEX_MD_PATH}. Ensure it's accessible.`);
-                rawMdContent = await response.text();
-                
-                allPrompts = parseMarkdown(rawMdContent);
-
-                if (allPrompts.length === 0) {
-                    showError("No prompts found in index.md or failed to parse.");
-                    return;
-                }
-
-                allPrompts.sort((a, b) => a.title.localeCompare(b.title));
-                renderPrompts(allPrompts);
-
-            } catch (error) {
-                console.error("Error fetching or parsing prompts:", error);
-                showError(error.message + " Check console for more details. If using file://, try a local server.");
-            } finally {
-                loader.classList.add('hidden');
-            }
-        }
-
-        function parseMarkdown(markdownContent) {
-            const prompts = [];
-            const lines = markdownContent.split('\\n');
-            let currentCategory = "General";
-            let categoryId = 0;
-
-            lines.forEach(line => {
-                const categoryMatch = line.match(/^##\\s+(.*)/);
-                if (categoryMatch) {
-                    currentCategory = categoryMatch[1].trim();
-                    categoryId++;
-                    return;
-                }
-
-                const promptMatch = line.match(/^-\s+\[([^\]]+)\]\(([^)]+)\)/);
-                if (promptMatch) {
-                    const title = promptMatch[1].trim();
-                    const filePath = promptMatch[2].trim();
-                    // Create a unique ID based on category and title
-                    const id = `${currentCategory.replace(/\\s+/g, '-')}-${title.replace(/\\s+/g, '-')}-${prompts.length}`;
-                    prompts.push({
-                        id: id,
-                        sourceName: currentCategory, // Using category as sourceName for consistency with original example
-                        title: title,
-                        content: null, // Will be fetched on demand
-                        description: `A prompt from the '${currentCategory}' category.`,
-                        filePath: filePath,
-                        category: currentCategory
-                    });
-                }
-            });
-            return prompts;
-        }
-        
-        async function fetchPromptContent(prompt) {
-            if (prompt.content) return prompt.content; // Already fetched
-
-            try {
-                // Adjust path if necessary, assuming fabric_ui_shell.html is in 'fabric/'
-                // and paths in index.md are relative to the 'fabric/' directory.
-                // If index.md paths are relative to workspace root, this might need adjustment.
-                const response = await fetch(prompt.filePath); 
-                if (!response.ok) {
-                    console.error(`Failed to fetch content for ${prompt.title} from ${prompt.filePath}`);
-                    return "Error: Could not load prompt content.";
-                }
-                const textContent = await response.text();
-                prompt.content = textContent; // Cache the content
-                return textContent;
-            } catch (error) {
-                console.error(`Error fetching prompt content for ${prompt.title}:`, error);
-                return "Error: Could not load prompt content due to a network or parsing issue.";
-            }
-        }
-
-
-        // --- UI Rendering and Interaction ---
-        function renderPrompts(promptsToRender) {
-            promptListContainer.innerHTML = '';
-            if (promptsToRender.length === 0) {
-                promptListContainer.innerHTML = `<p class="text-center text-[var(--ui-subdued-blue)]">No prompts match your search.</p>`;
-                return;
-            }
-            promptsToRender.forEach((prompt, index) => {
-                const promptElement = document.createElement('div');
-                promptElement.className = 'prompt-container group/prompt bg-[var(--ui-dark-grey)] bg-opacity-70 rounded-lg shadow-md border border-[var(--ui-subdued-blue)] hover:border-[var(--accent-orange)] hover:shadow-xl transition-all duration-300 ease-in-out';
-                promptElement.dataset.promptId = prompt.id;
-                
-                promptElement.innerHTML = `
-                    <div class="flex items-center gap-4 px-6 py-4 cursor-pointer toggle-button">
-                        <div class="flex-grow">
-                            <div class="flex items-center gap-3">
-                                <p class="text-[var(--text-white)] text-base font-semibold leading-normal">${index + 1}. ${escapeHtml(prompt.title)}</p>
-                                <span class="text-xs bg-gray-600 text-gray-300 px-2 py-1 rounded-full whitespace-nowrap">${escapeHtml(prompt.category)}</span>
-                            </div>
-                            <p class="text-[var(--ui-subdued-blue)] text-sm font-normal leading-normal line-clamp-1 group-hover/prompt:line-clamp-none transition-all">${escapeHtml(prompt.description)}</p>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button class="copy-button flex items-center justify-center gap-1 rounded-md h-9 w-9 p-0 bg-transparent text-[var(--ui-subdued-blue)] hover:bg-[var(--accent-orange)] hover:text-[var(--text-white)] transition-colors" title="Copy Full Prompt (loads content first)">
-                                <span class="material-icons icon !text-lg">content_copy</span>
-                            </button>
-                            <button class="toggle-button flex items-center justify-center gap-1 rounded-md h-9 px-3 bg-[var(--ui-subdued-blue)] text-[var(--text-white)] text-xs font-medium hover:bg-[var(--accent-orange)] transition-colors">
-                                <span class="truncate">View</span>
-                                <span class="material-icons icon !text-lg transition-transform duration-300 group-data-[open=true]/prompt:rotate-180">expand_more</span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="details-content hidden h-0 overflow-hidden transition-all duration-300 ease-in-out data-[open=true]:h-auto data-[open=true]:py-4 data-[open=true]:px-6 border-t border-[var(--ui-subdued-blue)]">
-                        <div class="prompt-content-loader text-center p-4 text-[var(--ui-subdued-blue)]">Loading content...</div>
-                        <pre class="prompt-text-display text-[var(--ui-subdued-blue)] text-sm mb-4 whitespace-pre-wrap font-mono hidden"></pre>
-                        <button class="copy-button-details flex items-center justify-center gap-2 rounded-md h-9 px-4 bg-[var(--accent-orange)] text-white text-sm font-medium hover:bg-opacity-90 transition-colors hidden">
-                            <span class="material-icons icon !text-base">content_copy</span>
-                            <span class="truncate">Copy Full Prompt</span>
-                        </button>
-                    </div>
-                `;
-                promptListContainer.appendChild(promptElement);
-            });
-        }
-
-        async function togglePrompt(button) {
-            const promptContainer = button.closest('.prompt-container');
-            const contentDiv = promptContainer.querySelector('.details-content');
-            const isOpen = contentDiv.dataset.open === 'true';
-            
-            contentDiv.dataset.open = !isOpen;
-            promptContainer.dataset.open = !isOpen;
-
-            if (!isOpen) { // If opening
-                const promptId = promptContainer.dataset.promptId;
-                const prompt = allPrompts.find(p => p.id === promptId);
-                if (!prompt) return;
-
-                const loaderElement = contentDiv.querySelector('.prompt-content-loader');
-                const textDisplayElement = contentDiv.querySelector('.prompt-text-display');
-                const copyDetailsButton = contentDiv.querySelector('.copy-button-details');
-
-                if (!prompt.content) { // Content not yet fetched
-                    loaderElement.classList.remove('hidden');
-                    textDisplayElement.classList.add('hidden');
-                    copyDetailsButton.classList.add('hidden');
-
-                    const fetchedContent = await fetchPromptContent(prompt);
-                    textDisplayElement.textContent = fetchedContent;
-                    
-                    loaderElement.classList.add('hidden');
-                    textDisplayElement.classList.remove('hidden');
-                    if (fetchedContent && !fetchedContent.startsWith("Error:")) {
-                        copyDetailsButton.classList.remove('hidden');
-                    }
-                } else { // Content already fetched
-                    textDisplayElement.textContent = prompt.content;
-                    loaderElement.classList.add('hidden');
-                    textDisplayElement.classList.remove('hidden');
-                     if (prompt.content && !prompt.content.startsWith("Error:")) {
-                        copyDetailsButton.classList.remove('hidden');
-                    }
-                }
-            }
-        }
-
-        async function copyPrompt(button) {
-            const promptContainer = button.closest('.prompt-container');
-            const promptId = promptContainer.dataset.promptId;
-            const prompt = allPrompts.find(p => p.id === promptId);
-            if (!prompt) return;
-
-            let contentToCopy = prompt.content;
-            if (!contentToCopy) { // If content not loaded yet (e.g. main card copy button)
-                showToast('Loading content to copy...');
-                contentToCopy = await fetchPromptContent(prompt);
-                 // Update the details view if it happens to be open
-                const contentDiv = promptContainer.querySelector('.details-content');
-                if (contentDiv && contentDiv.dataset.open === 'true') {
-                    const textDisplayElement = contentDiv.querySelector('.prompt-text-display');
-                    textDisplayElement.textContent = contentToCopy;
-                    contentDiv.querySelector('.prompt-content-loader').classList.add('hidden');
-                    textDisplayElement.classList.remove('hidden');
-                    if (contentToCopy && !contentToCopy.startsWith("Error:")) {
-                         contentDiv.querySelector('.copy-button-details').classList.remove('hidden');
-                    }
-                }
-            }
-            
-            if (contentToCopy && !contentToCopy.startsWith("Error:")) {
-                navigator.clipboard.writeText(contentToCopy).then(() => {
-                    showToast('Prompt copied!');
-                }).catch(err => {
-                    console.error('Failed to copy text: ', err);
-                    showToast('Copy failed! See console.');
-                });
-            } else {
-                showToast('Error: Content not available to copy.');
-            }
-        }
-
-        function handleSearch() {
-            const searchTerm = searchInput.value.toLowerCase();
-            const filteredPrompts = allPrompts.filter(prompt => {
-                const title = prompt.title.toLowerCase();
-                const category = prompt.category.toLowerCase();
-                // Basic content search if content is already loaded (optional, can be slow if many prompts are open)
-                // const content = prompt.content ? prompt.content.toLowerCase() : ""; 
-                return title.includes(searchTerm) || category.includes(searchTerm); // || content.includes(searchTerm);
-            });
-            renderPrompts(filteredPrompts);
-        }
-        
-        function showError(message) {
-            errorMessage.classList.remove('hidden');
-            errorText.textContent = message;
-        }
-        
-        function escapeHtml(unsafe) {
-            if (typeof unsafe !== 'string') return '';
-            return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }
-
-        function showToast(message) {
-            toast.textContent = message;
-            toast.classList.remove('opacity-0');
-            setTimeout(() => {
-                toast.classList.add('opacity-0');
-            }, 2000);
-        }
-    </script>
 </body>
 </html>
-<!--
-    This HTML file serves as the main entry point for the Fabric Prompt Library.
-    It fetches prompts from index.md, displays them, and allows users to search and copy prompts.
-    The design is responsive and uses Tailwind CSS for styling.
-
--->
