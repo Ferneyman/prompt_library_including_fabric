@@ -6,7 +6,7 @@
 
 # Define configuration variables
 # All paths are relative to the 'fabric' directory (where the script is run).
-TARGET_DIR="all_prompts_consolidated" # Output: fabric/all_prompts_consolidated/
+TARGET_DIR="docs/all_prompts_consolidated" # Output: fabric/docs/all_prompts_consolidated/
 FABRIC_TEMP_CLONE_NAME="temp_fabric_clone" # Name for the temp directory
 FABRIC_TEMP_CLONE_PATH="../${FABRIC_TEMP_CLONE_NAME}" # Path: ../temp_fabric_clone (outside fabric/)
 FABRIC_REPO_URL="https://github.com/danielmiessler/fabric.git"
@@ -53,7 +53,7 @@ echo "Sparse checkout configured."
 # Process fabric patterns
 echo "Processing Fabric patterns..."
 # Current directory is ${FABRIC_TEMP_CLONE_PATH} (e.g., ../temp_fabric_clone relative to fabric/)
-# Destination is fabric/all_prompts_consolidated which is ../fabric/${TARGET_DIR}/ from here.
+# Destination is fabric/docs/all_prompts_consolidated which is ../fabric/${TARGET_DIR}/ from here.
 find patterns -type f -name system.md | while read filepath; do
     parent_dir_name=$(basename "$(dirname "$filepath")")
     # Sanitize name: replace spaces with underscores, allow alphanumeric, underscore, hyphen, dot
@@ -79,7 +79,7 @@ echo "Current directory: $(pwd)"
 
 # Process user's prompts
 echo "Processing user's prompts from './${MY_PROMPTS_DIR}'..."
-# Current directory is 'fabric/'. MY_PROMPTS_DIR is 'docs/my_prompts'. TARGET_DIR is 'all_prompts_consolidated'.
+# Current directory is 'fabric/'. MY_PROMPTS_DIR is 'docs/my_prompts'. TARGET_DIR is 'docs/all_prompts_consolidated'.
 if [ -d "./${MY_PROMPTS_DIR}" ]; then
     for user_prompt_file in "./${MY_PROMPTS_DIR}"/*.md; do
         if [ -f "$user_prompt_file" ]; then
@@ -111,7 +111,7 @@ echo "Temporary directory cleaned up."
 
 echo "-----------------------------------------------------
 Consolidation complete!
-All prompts are now in the './${TARGET_DIR}/' directory (inside 'fabric/').
+All prompts are now in the './${TARGET_DIR}/' directory (inside 'fabric/docs/').
 Fabric patterns are prefixed with 'fabric_'.
 Your prompts are prefixed with 'myprompt_'.
 -----------------------------------------------------
