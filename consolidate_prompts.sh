@@ -176,7 +176,8 @@ for prompt_file in "./${TARGET_DIR}"/*.md; do
                 description=$(jq -r --arg pat_name "$jq_lookup_name" '.patterns[] | select(.patternName == $pat_name) | .description' "$PATTERN_DESCRIPTIONS_FILE")
                 
                 # Check if jq found a description
-                if [ "$description" != "null" ] && [ -n "$description" ]; then
+                # Use [[ ]] for more robust string comparison and -n for non-empty check
+                if [[ "$description" != "null" && -n "$description" ]]; then
                     echo "  Found description in JSON for $jq_lookup_name"
                 else
                     description="" # Reset if not found or null, to trigger file extraction
