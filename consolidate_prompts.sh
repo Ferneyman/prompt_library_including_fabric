@@ -153,7 +153,7 @@ for prompt_file in "./${TARGET_DIR}"/*.md; do
     if [ -f "$prompt_file" ]; then
         filename_with_ext=$(basename "$prompt_file")
         # Skip processing INDEX.md itself if it's in the loop
-        if [ "$filename_with_ext" == "INDEX.md" ]; then
+        if [[ "$filename_with_ext" == "INDEX.md" ]]; then # Changed [ to [[
             echo "Skipping INDEX.md itself."
             continue
         fi
