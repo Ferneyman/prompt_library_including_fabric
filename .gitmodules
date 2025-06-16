@@ -1,3 +1,0 @@
-[submodule "fabric_src"]
-	path = fabric_src
-	url = https://github.com/danielmiessler/fabric.git
