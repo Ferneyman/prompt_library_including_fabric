@@ -191,13 +191,17 @@ for prompt_file in "./${TARGET_DIR}"/*.md; do
         # If description is still empty (not found in JSON or not a fabric_ pattern), extract from file content
         if [ -z "$description" ]; then
             echo "  Extracting description from file: $filename_with_ext"
-            description_from_file=$(head -c 2500 "$prompt_file" | tr '\n' ' ' | sed -E \
-                -e 's/<[^>]*>//g' \
-                -e 's/!\[[^]]*\]\([^)]*\)//g' \
-                -e 's/\[[^\]]*\]\([^)]*\)//g' \
-                -e 's/#{1,6} //g' \
-                -e 's/[*_`~]{1,3}//g' \
-                -e 's/---[^-]*---//g' \
+            description_from_file=$(head -c 2500 "$prompt_file" | tr '\\n' ' ' | sed -E \\
+                -e 's/<[^>]*>//g' \\
+                -e 's/!\\[[^]]*\\]\\([^)]*\\)//g' \\
+                -e 's/\\[[^\\]]*\\]\\([^)]*\\)//g' \\
+                -e 's/#{1,6} //g' \\
+                -e 's/[*_`~]{1,3}//g' \\
+                -e 's/---[^-]*---//g' \\
+                -e 's/\\{\\{/( (/g' \\
+                -e 's/\\}\\}/) )/g' \\
+                -e 's/\\{%/( %/g' \\
+                -e 's/%\\}/% )/g' \\
                 | tr -s ' ' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | cut -c1-500)
 
             if [ -n "$description_from_file" ]; then
