@@ -126,7 +126,9 @@ To run this script again:
 echo
 echo "Generating prompt index..."
 
-INDEX_FILE_PATH="./${TARGET_DIR}/INDEX.md"
+# INDEX_FILE_PATH="./${TARGET_DIR}/INDEX.md" # Old path
+INDEX_FILE_PATH="./docs/INDEX.md" # New path, directly in docs/
+
 # Ensure this path is correct for where you placed the JSON file.
 # It should be relative to the 'fabric/' directory where the script runs.
 PATTERN_DESCRIPTIONS_FILE="./docs/metadata/pattern_descriptions.json" 
@@ -191,18 +193,18 @@ for prompt_file in "./${TARGET_DIR}"/*.md; do
         # If description is still empty (not found in JSON or not a fabric_ pattern), extract from file content
         if [ -z "$description" ]; then
             echo "  Extracting description from file: $filename_with_ext"
-            description_from_file=$(head -c 2500 "$prompt_file" | tr '\\n' ' ' | sed -E \\
-                -e 's/<[^>]*>//g' \\
-                -e 's/!\\[[^]]*\\]\\([^)]*\\)//g' \\
-                -e 's/\\[[^\\]]*\\]\\([^)]*\\)//g' \\
-                -e 's/#{1,6} //g' \\
-                -e 's/[*_`~]{1,3}//g' \\
-                -e 's/---[^-]*---//g' \\
-                -e 's/\\{\\{/( (/g' \\
-                -e 's/\\}\\}/) )/g' \\
-                -e 's/\\{%/( %/g' \\
-                -e 's/%\\}/% )/g' \\
-                | tr -s ' ' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | cut -c1-500)
+            description_from_file=$(head -c 2500 "$prompt_file" | tr '\n' ' ' | sed -E \
+                -e 's/<[^>]*>//g' \
+                -e 's/!\[[^]]*\]\([^)]*\)//g' \
+                -e 's/\[[^\]]*\]\([^)]*\)//g' \
+                -e 's/#{1,6} //g' \
+                -e 's/[*_`~]{1,3}//g' \
+                -e 's/---[^-]*---//g' \
+                -e 's/\{\{/( (/g' \
+                -e 's/\}\}/) )/g' \
+                -e 's/\{%/( %/g' \
+                -e 's/%\}/% )/g' \
+                | tr -s ' ' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | cut -c1-500) # Removed stray backslash from previous line
 
             if [ -n "$description_from_file" ]; then
                 description="$description_from_file..."
@@ -211,7 +213,8 @@ for prompt_file in "./${TARGET_DIR}"/*.md; do
             fi
         fi
 
-        echo "## [$filename_no_ext](./$filename_with_ext)" >> "$INDEX_FILE_PATH"
+        # Adjust link to be relative to docs/INDEX.md, pointing into all_prompts_consolidated/
+        echo "## [$filename_no_ext](./all_prompts_consolidated/$filename_with_ext)" >> "$INDEX_FILE_PATH"
         echo "" >> "$INDEX_FILE_PATH"
         echo "*Description:* $description" >> "$INDEX_FILE_PATH"
         echo "" >> "$INDEX_FILE_PATH"
