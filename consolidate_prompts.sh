@@ -9,8 +9,9 @@
 # Define configuration variables
 # All paths are relative to the 'fabric' directory (where the script is run).
 TARGET_DIR="docs/my_prompts_consolidated" # Directory for consolidated user prompts
-MY_PROMPTS_DIR="docs/my_prompts" # Input: fabric/docs/my_prompts/
+MY_PROMPTS_DIR="docs/my_prompts" # Default input: fabric/docs/my_prompts/
 PARENT_DIR="../" # Access parent directory for possible prompt sources
+PARENT_MY_PROMPTS_DIR="../my_prompts" # Try to look for my_prompts in parent directory
 FABRIC_REPO_URL="https://github.com/danielmiessler/fabric"
 FABRIC_PATTERNS_PATH="patterns" # Path within the GitHub repo where patterns are stored
 FABRIC_PATTERN_EXTRACTS_URL="https://raw.githubusercontent.com/danielmiessler/fabric/main/Pattern_Descriptions/pattern_extracts.json" # URL to fetch pattern descriptions
@@ -26,31 +27,87 @@ mkdir -p "./${TARGET_DIR}" # Create the target directory inside fabric/ if it do
 if [ $? -ne 0 ]; then echo "Error: Could not create/check target directory './${TARGET_DIR}'. Exiting."; exit 1; fi
 echo "Target directory './${TARGET_DIR}' verified."
 
-# Process user's prompts
-echo "Processing user's prompts from './${MY_PROMPTS_DIR}'..."
-# Current directory is 'fabric/'. MY_PROMPTS_DIR is 'docs/my_prompts'. TARGET_DIR is 'docs/my_prompts_consolidated'.
-if [ -d "./${MY_PROMPTS_DIR}" ]; then
-    for user_prompt_file in "./${MY_PROMPTS_DIR}"/*.md; do
+# Process user's prompts - try multiple possible locations
+echo "Searching for user's prompts..."
+
+# Array of possible prompt directories to check
+potential_prompt_dirs=(
+    "./${MY_PROMPTS_DIR}"                 # Default: fabric/docs/my_prompts
+    "${PARENT_MY_PROMPTS_DIR}"            # Parent-level: ../my_prompts
+    "../fabric/docs/my_prompts"           # Another possible location
+    "./../my_prompts"                     # Alternative parent format
+)
+
+found_prompts=false
+
+for prompt_dir in "${potential_prompt_dirs[@]}"; do
+    echo "Checking for prompts in: $prompt_dir"
+    
+    if [ -d "$prompt_dir" ]; then
+        echo "Found prompts directory: $prompt_dir"
+        
+        # Check if directory contains .md files
+        md_file_count=$(find "$prompt_dir" -maxdepth 1 -type f -name "*.md" | wc -l)
+        if [ "$md_file_count" -eq 0 ]; then
+            echo "  No markdown files found in $prompt_dir"
+            continue
+        fi
+        
+        for user_prompt_file in "$prompt_dir"/*.md; do
+            if [ -f "$user_prompt_file" ]; then
+                base_filename=$(basename "$user_prompt_file" .md)
+                sanitized_name=$(echo "$base_filename" | tr -s '[:space:]' '_' | tr -cd '[:alnum:]_-.')
+                
+                if [ -n "$sanitized_name" ]; then
+                    cp "$user_prompt_file" "./${TARGET_DIR}/myprompt_${sanitized_name}.md"
+                    
+                    if [ $? -eq 0 ]; then
+                        echo "  Copied user prompt: myprompt_${sanitized_name}.md to ./${TARGET_DIR}/"
+                        found_prompts=true
+                    else
+                        echo "  Warning: Failed to copy user prompt from $user_prompt_file"
+                    fi
+                else
+                    echo "  Warning: Could not derive a valid name from user prompt file: $user_prompt_file"
+                fi
+            else
+                echo "  Skipping non-file item in user prompts directory: $user_prompt_file"
+            fi
+        done
+        
+        echo "Finished processing user's prompts from $prompt_dir"
+    else
+        echo "  Directory not found: $prompt_dir"
+    fi
+done
+
+# Check if any parent directory might have .md files directly
+echo "Checking parent directory for .md files..."
+parent_md_files=$(find "$PARENT_DIR" -maxdepth 1 -type f -name "*.md" | wc -l)
+if [ "$parent_md_files" -gt 0 ]; then
+    echo "Found markdown files in parent directory, copying them..."
+    for user_prompt_file in "$PARENT_DIR"/*.md; do
         if [ -f "$user_prompt_file" ]; then
             base_filename=$(basename "$user_prompt_file" .md)
             sanitized_name=$(echo "$base_filename" | tr -s '[:space:]' '_' | tr -cd '[:alnum:]_-.')
+            
             if [ -n "$sanitized_name" ]; then
                 cp "$user_prompt_file" "./${TARGET_DIR}/myprompt_${sanitized_name}.md"
+                
                 if [ $? -eq 0 ]; then
-                    echo "Copied user prompt: myprompt_${sanitized_name}.md to ./${TARGET_DIR}/"
+                    echo "  Copied user prompt from parent dir: myprompt_${sanitized_name}.md to ./${TARGET_DIR}/"
+                    found_prompts=true
                 else
-                    echo "Warning: Failed to copy user prompt from $user_prompt_file"
+                    echo "  Warning: Failed to copy user prompt from $user_prompt_file"
                 fi
-            else
-                echo "Warning: Could not derive a valid name from user prompt file: $user_prompt_file"
             fi
-        else
-            echo "Skipping non-file item in user prompts directory: $user_prompt_file"
         fi
     done
-    echo "Finished processing user's prompts."
-else
-    echo "Warning: User prompts directory './${MY_PROMPTS_DIR}' not found. Skipping user prompts."
+fi
+
+if [ "$found_prompts" = false ]; then
+    echo "No user prompts found in any expected locations."
+    echo "Will use existing prompts in ./${TARGET_DIR}/ if available."
 fi
 
 echo "-----------------------------------------------------
@@ -63,12 +120,14 @@ echo
 echo "Generating prompt index..."
 
 # Index file path - directly in docs directory
-INDEX_FILE_PATH="./docs/INDEX.md"
+INDEX_FILE_PATH="./docs/index.md"
 
 # Initialize INDEX.md
 echo "# Consolidated Prompt Index" > "$INDEX_FILE_PATH"
 echo "" >> "$INDEX_FILE_PATH"
-echo "Last updated: $(date)" >> "$INDEX_FILE_PATH"
+# Use a date format without time or timezone to avoid issues
+current_date=$(LC_ALL=C date "+%B %d, %Y")
+echo "Last updated: $current_date" >> "$INDEX_FILE_PATH" 
 echo "" >> "$INDEX_FILE_PATH"
 
 echo "## Fabric Patterns" >> "$INDEX_FILE_PATH"
@@ -91,7 +150,7 @@ fi
 
 # Download pattern extracts directly from GitHub
 echo "Downloading pattern extracts from GitHub..."
-curl -s "$FABRIC_PATTERN_EXTRACTS_URL" -o "$PATTERN_EXTRACTS_TEMP_FILE"
+curl -s -H "Accept: application/vnd.github.v3.raw" "$FABRIC_PATTERN_EXTRACTS_URL" -o "$PATTERN_EXTRACTS_TEMP_FILE"
 
 if [ $? -ne 0 ] || [ ! -s "$PATTERN_EXTRACTS_TEMP_FILE" ]; then
     echo "Warning: Failed to download pattern extracts from GitHub or file is empty."
@@ -101,36 +160,96 @@ if [ $? -ne 0 ] || [ ! -s "$PATTERN_EXTRACTS_TEMP_FILE" ]; then
     echo "${FABRIC_REPO_URL}/tree/main/${FABRIC_PATTERNS_PATH}" >> "$INDEX_FILE_PATH"
     echo "" >> "$INDEX_FILE_PATH"
 else
-    # Apply a more robust preprocessing to clean the JSON file
+    # Apply a much more robust preprocessing to clean the JSON file
     echo "Preprocessing JSON to fix formatting issues..."
     ESCAPED_JSON_TEMP_FILE="/tmp/fabric_pattern_extracts_escaped.json"
+    FIXED_JSON_TEMP_FILE="/tmp/fabric_pattern_extracts_fixed.json"
     
-    # First, remove all control characters that can interfere with JSON parsing
-    perl -pe 's/[\x00-\x1F\x7F]//g' "$PATTERN_EXTRACTS_TEMP_FILE" > "$ESCAPED_JSON_TEMP_FILE"
+    echo "Step 1: Clean up control characters and escape sequences..."
+    # First pass: Remove all control characters that interfere with JSON parsing
+    perl -pe 's/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]//g' "$PATTERN_EXTRACTS_TEMP_FILE" > "$ESCAPED_JSON_TEMP_FILE"
     
     # Check if the file starts with a valid JSON character
     first_char=$(head -c 1 "$ESCAPED_JSON_TEMP_FILE")
     if [[ "$first_char" != "{" && "$first_char" != "[" ]]; then
-        echo "Warning: JSON file does not start with a valid JSON character. Attempting to fix..."
+        echo "Warning: JSON file does not start with a valid JSON character. Fixing header..."
         # Find the first occurrence of { or [ and trim everything before it
         perl -ne 'if(/^[{\[]/) {print; $found=1} elsif($found) {print}' "$ESCAPED_JSON_TEMP_FILE" > "${ESCAPED_JSON_TEMP_FILE}.tmp"
         mv "${ESCAPED_JSON_TEMP_FILE}.tmp" "$ESCAPED_JSON_TEMP_FILE"
     fi
     
+    echo "Step 2: Fixing invalid escape sequences and normalize line endings..."
+    # Replace problematic sequences that often break JSON parsing
+    perl -pe '
+        # Fix common escape sequence issues
+        s/\\(?!["\\/bfnrt])/\\\\/g;
+        # Normalize line endings
+        s/\r\n/\\n/g;
+        s/\n/\\n/g;
+        # Fix broken quote escaping
+        s/(?<!\\)\\"/\\\\"/g;
+        # Handle percent symbols that break JSON parsing
+        s/%$/%\\n/g;
+    ' "$ESCAPED_JSON_TEMP_FILE" > "$FIXED_JSON_TEMP_FILE"
+    
     # Validate JSON structure
-    echo "Validating processed JSON structure..."
-    if ! jq -e '.' "$ESCAPED_JSON_TEMP_FILE" >/dev/null 2>&1; then
-        echo "Error: JSON validation failed. Attempting more aggressive cleaning..."
-        # More aggressive JSON cleaning
-        perl -pe 's/\\u0000//g; s/\\\\//g; s/\\\\"/""/g; s/\\r\\n/ /g; s/\\n/ /g; s/\\t/ /g;' "$PATTERN_EXTRACTS_TEMP_FILE" > "$ESCAPED_JSON_TEMP_FILE"
+    echo "Step 3: Validating processed JSON structure..."
+    if jq -e '.' "$FIXED_JSON_TEMP_FILE" >/dev/null 2>&1; then
+        echo "JSON validation successful!"
+        mv "$FIXED_JSON_TEMP_FILE" "$ESCAPED_JSON_TEMP_FILE"
+    else
+        echo "Error: Initial JSON validation failed. Attempting deeper repair..."
         
-        # Try again to validate
-        if ! jq -e '.' "$ESCAPED_JSON_TEMP_FILE" >/dev/null 2>&1; then
-            echo "Final attempt to repair JSON..."
-            # Strip out all non-ASCII characters as a last resort
-            perl -pe 's/[^[:ascii:]]//g' "$PATTERN_EXTRACTS_TEMP_FILE" > "$ESCAPED_JSON_TEMP_FILE" 
+        # Try a completely different approach - rebuild the JSON structure
+        echo "Step 4: Rebuilding JSON structure..."
+        echo '{' > "$FIXED_JSON_TEMP_FILE"
+        echo '  "patterns": [' >> "$FIXED_JSON_TEMP_FILE"
+        
+        # Extract each pattern entry individually with perl
+        perl -n -e '
+            if (/^\s*{\s*"patternName":\s*"([^"]+)"/) {
+                $pattern_name = $1;
+                $started = 1;
+                $json = "    {\n      \"patternName\": \"$pattern_name\",\n";
+            }
+            elsif ($started && /^\s*"pattern_extract":\s*"/) {
+                $json .= "      \"pattern_extract\": \"";
+                $in_extract = 1;
+            }
+            elsif ($in_extract && /^\s*}/) {
+                $json .= "\"\n    },\n";
+                print $json;
+                $started = 0;
+                $in_extract = 0;
+            }
+            elsif ($in_extract) {
+                # Clean the line for pattern_extract
+                $_ =~ s/"/\\"/g;  # Escape quotes
+                $_ =~ s/\\/\\\\/g; # Escape backslashes
+                $_ =~ s/\n/\\n/g;  # Escape newlines
+                $_ =~ s/\r//g;     # Remove carriage returns
+                $_ =~ s/[\x00-\x1F]//g; # Remove control chars
+                chomp;
+                $json .= $_;
+            }
+        ' "$PATTERN_EXTRACTS_TEMP_FILE" >> "$FIXED_JSON_TEMP_FILE"
+        
+        # Remove trailing comma if it exists
+        perl -i -pe 's/,\s*$/\n/' "$FIXED_JSON_TEMP_FILE"
+        
+        # Close the JSON structure
+        echo '  ]' >> "$FIXED_JSON_TEMP_FILE"
+        echo '}' >> "$FIXED_JSON_TEMP_FILE"
+        
+        # Validate the rebuilt JSON
+        if jq -e '.' "$FIXED_JSON_TEMP_FILE" >/dev/null 2>&1; then
+            echo "JSON rebuild successful!"
+            mv "$FIXED_JSON_TEMP_FILE" "$ESCAPED_JSON_TEMP_FILE"
+        else
+            echo "Error: JSON rebuild failed. Will use GitHub API fallback."
+            cp "$PATTERN_EXTRACTS_TEMP_FILE" "$ESCAPED_JSON_TEMP_FILE"
         fi
-    fi
+    }
     
     # Check for patterns array
     if ! jq -e '.patterns' "$ESCAPED_JSON_TEMP_FILE" >/dev/null 2>&1; then
@@ -140,13 +259,19 @@ else
             PATTERN_DIR_TEMP_FILE="/tmp/fabric_pattern_dirs.json"
             
             # Get the list of directories in the patterns folder
-            curl -s "$GITHUB_API_REPO_CONTENTS" -o "$PATTERN_DIR_TEMP_FILE"
+            echo "Fetching pattern directories from GitHub API..."
+            curl -s -H "Accept: application/vnd.github+json" "$GITHUB_API_REPO_CONTENTS" -o "$PATTERN_DIR_TEMP_FILE"
             
             if [ $? -eq 0 ] && [ -s "$PATTERN_DIR_TEMP_FILE" ] && jq -e '.' "$PATTERN_DIR_TEMP_FILE" >/dev/null 2>&1; then
                 echo "Successfully fetched pattern directories from GitHub API"
                 
                 # Filter only directories
-                DIR_COUNT=$(jq 'map(select(.type == "dir")) | length' "$PATTERN_DIR_TEMP_FILE")
+                DIR_COUNT=$(jq 'map(select(.type == "dir")) | length' "$PATTERN_DIR_TEMP_FILE" 2>/dev/null)
+                
+                if [ -z "$DIR_COUNT" ]; then
+                    DIR_COUNT=0
+                fi
+                
                 echo "Found $DIR_COUNT pattern directories"
                 
                 if [ "$DIR_COUNT" -gt 0 ]; then
@@ -154,22 +279,30 @@ else
                     jq -c 'map(select(.type == "dir"))[]' "$PATTERN_DIR_TEMP_FILE" | while read -r dir_entry; do
                         pattern_name=$(echo "$dir_entry" | jq -r '.name')
                         if [ -n "$pattern_name" ] && [ "$pattern_name" != "null" ]; then
-                            # Format pattern name for display
-                            formatted_pattern_name="${pattern_name//_/ }"
+                            # Format pattern name for better display
+                            # Replace underscores with spaces and capitalize first letter of each word
+                            formatted_pattern_name=$(echo "$pattern_name" | sed 's/_/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2));}1')
                             
-                            # Create link to the pattern's system.md file
-                            github_link="${FABRIC_REPO_URL}/blob/main/${FABRIC_PATTERNS_PATH}/${pattern_name}/system.md"
+                            # Create link to the pattern's system.md file (error handling for path)
+                            if [ -n "$pattern_name" ]; then
+                                github_link="${FABRIC_REPO_URL}/blob/main/${FABRIC_PATTERNS_PATH}/${pattern_name}/system.md"
+                            else
+                                github_link="${FABRIC_REPO_URL}/blob/main/${FABRIC_PATTERNS_PATH}"
+                            fi
                             
                             # Display name with fabric: prefix
                             display_name="fabric: $formatted_pattern_name"
                             
-                            # Add to INDEX.md
-                            echo "### [$display_name]($github_link)" >> "$INDEX_FILE_PATH"
-                            echo "" >> "$INDEX_FILE_PATH"
-                            echo "*Description:* Pattern description not available." >> "$INDEX_FILE_PATH"
-                            echo "" >> "$INDEX_FILE_PATH"
-                            echo "---" >> "$INDEX_FILE_PATH"
-                            echo "" >> "$INDEX_FILE_PATH"
+                            # Add to INDEX.md (only if pattern_name is not empty)
+                            if [ -n "$pattern_name" ]; then
+                                echo "### [$display_name]($github_link)" >> "$INDEX_FILE_PATH"
+                                echo "" >> "$INDEX_FILE_PATH"
+                                echo "*Description:* Pattern description not available." >> "$INDEX_FILE_PATH"
+                                echo "" >> "$INDEX_FILE_PATH"
+                                echo "---" >> "$INDEX_FILE_PATH"
+                                echo "" >> "$INDEX_FILE_PATH"
+                                echo "Indexed pattern: $pattern_name"
+                            fi
                         fi
                     done
                     
@@ -211,12 +344,18 @@ else
                 
                 echo "Processing pattern: $pattern_name"
                 
+                # Skip if pattern name is empty or null
+                if [ -z "$pattern_name" ] || [ "$pattern_name" = "null" ]; then
+                    echo "Warning: Empty pattern name found, skipping..."
+                    continue
+                fi
+                
                 # Create GitHub link to the pattern's system.md file
                 github_link="${FABRIC_REPO_URL}/blob/main/${FABRIC_PATTERNS_PATH}/${pattern_name}/system.md"
                 
                 # Format pattern name for better display
-                # Replace underscores with spaces, capitalize words for display
-                formatted_pattern_name="${pattern_name//_/ }"
+                # Replace underscores with spaces, capitalize first letter of each word
+                formatted_pattern_name=$(echo "$pattern_name" | sed 's/_/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2));}1')
                 
                 # Display name with fabric: prefix for readability
                 display_name="fabric: $formatted_pattern_name"
