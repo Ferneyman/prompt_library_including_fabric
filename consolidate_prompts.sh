@@ -160,101 +160,23 @@ if [ $? -ne 0 ] || [ ! -s "$PATTERN_EXTRACTS_TEMP_FILE" ]; then
     echo "${FABRIC_REPO_URL}/tree/main/${FABRIC_PATTERNS_PATH}" >> "$INDEX_FILE_PATH"
     echo "" >> "$INDEX_FILE_PATH"
 else
-    # Apply a much more robust preprocessing to clean the JSON file
-    echo "Preprocessing JSON to fix formatting issues..."
-    ESCAPED_JSON_TEMP_FILE="/tmp/fabric_pattern_extracts_escaped.json"
-    FIXED_JSON_TEMP_FILE="/tmp/fabric_pattern_extracts_fixed.json"
-    
-    echo "Step 1: Clean up control characters and escape sequences..."
-    # First pass: Remove all control characters that interfere with JSON parsing
-    perl -pe 's/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]//g' "$PATTERN_EXTRACTS_TEMP_FILE" > "$ESCAPED_JSON_TEMP_FILE"
-    
-    # Check if the file starts with a valid JSON character
-    first_char=$(head -c 1 "$ESCAPED_JSON_TEMP_FILE")
-    if [[ "$first_char" != "{" && "$first_char" != "[" ]]; then
-        echo "Warning: JSON file does not start with a valid JSON character. Fixing header..."
-        # Find the first occurrence of { or [ and trim everything before it
-        perl -ne 'if(/^[{\[]/) {print; $found=1} elsif($found) {print}' "$ESCAPED_JSON_TEMP_FILE" > "${ESCAPED_JSON_TEMP_FILE}.tmp"
-        mv "${ESCAPED_JSON_TEMP_FILE}.tmp" "$ESCAPED_JSON_TEMP_FILE"
+    # Validate the downloaded JSON file directly
+    echo "Validating downloaded JSON file..."
+    if jq -e '.' "$PATTERN_EXTRACTS_TEMP_FILE" >/dev/null 2>&1; then
+        echo "JSON validation successful!"
+        # Use the original file directly since it's valid
+        ESCAPED_JSON_TEMP_FILE="$PATTERN_EXTRACTS_TEMP_FILE"
+    else
+        echo "Error: Downloaded JSON file is invalid. Will use GitHub API fallback."
+        # Set a flag to use GitHub API fallback
+        ESCAPED_JSON_TEMP_FILE=""
     fi
     
-    echo "Step 2: Fixing invalid escape sequences and normalize line endings..."
-    # Replace problematic sequences that often break JSON parsing
-    perl -pe '
-        # Fix common escape sequence issues
-        s/\\(?!["\\/bfnrt])/\\\\/g;
-        # Normalize line endings
-        s/\r\n/\\n/g;
-        s/\n/\\n/g;
-        # Fix broken quote escaping
-        s/(?<!\\)\\"/\\\\"/g;
-        # Handle percent symbols that break JSON parsing
-        s/%$/%\\n/g;
-    ' "$ESCAPED_JSON_TEMP_FILE" > "$FIXED_JSON_TEMP_FILE"
-    
-    # Validate JSON structure
-    echo "Step 3: Validating processed JSON structure..."
-    if jq -e '.' "$FIXED_JSON_TEMP_FILE" >/dev/null 2>&1; then
-        echo "JSON validation successful!"
-        mv "$FIXED_JSON_TEMP_FILE" "$ESCAPED_JSON_TEMP_FILE"
-    else
-        echo "Error: Initial JSON validation failed. Attempting deeper repair..."
-        
-        # Try a completely different approach - rebuild the JSON structure
-        echo "Step 4: Rebuilding JSON structure..."
-        echo '{' > "$FIXED_JSON_TEMP_FILE"
-        echo '  "patterns": [' >> "$FIXED_JSON_TEMP_FILE"
-        
-        # Extract each pattern entry individually with perl
-        perl -n -e '
-            if (/^\s*{\s*"patternName":\s*"([^"]+)"/) {
-                $pattern_name = $1;
-                $started = 1;
-                $json = "    {\n      \"patternName\": \"$pattern_name\",\n";
-            }
-            elsif ($started && /^\s*"pattern_extract":\s*"/) {
-                $json .= "      \"pattern_extract\": \"";
-                $in_extract = 1;
-            }
-            elsif ($in_extract && /^\s*}/) {
-                $json .= "\"\n    },\n";
-                print $json;
-                $started = 0;
-                $in_extract = 0;
-            }
-            elsif ($in_extract) {
-                # Clean the line for pattern_extract
-                $_ =~ s/"/\\"/g;  # Escape quotes
-                $_ =~ s/\\/\\\\/g; # Escape backslashes
-                $_ =~ s/\n/\\n/g;  # Escape newlines
-                $_ =~ s/\r//g;     # Remove carriage returns
-                $_ =~ s/[\x00-\x1F]//g; # Remove control chars
-                chomp;
-                $json .= $_;
-            }
-        ' "$PATTERN_EXTRACTS_TEMP_FILE" >> "$FIXED_JSON_TEMP_FILE"
-        
-        # Remove trailing comma if it exists
-        perl -i -pe 's/,\s*$/\n/' "$FIXED_JSON_TEMP_FILE"
-        
-        # Close the JSON structure
-        echo '  ]' >> "$FIXED_JSON_TEMP_FILE"
-        echo '}' >> "$FIXED_JSON_TEMP_FILE"
-        
-        # Validate the rebuilt JSON
-        if jq -e '.' "$FIXED_JSON_TEMP_FILE" >/dev/null 2>&1; then
-            echo "JSON rebuild successful!"
-            mv "$FIXED_JSON_TEMP_FILE" "$ESCAPED_JSON_TEMP_FILE"
-        else
-            echo "Error: JSON rebuild failed. Will use GitHub API fallback."
-            cp "$PATTERN_EXTRACTS_TEMP_FILE" "$ESCAPED_JSON_TEMP_FILE"
-        fi
-    }
-    
     # Check for patterns array
-    if ! jq -e '.patterns' "$ESCAPED_JSON_TEMP_FILE" >/dev/null 2>&1; then
-        echo "Warning: Downloaded JSON file validation failed. The patterns array might be missing."            echo "Attempting to fetch pattern directories directly from GitHub..."
-            # Try to get pattern directories directly from GitHub API
+    if [ -z "$ESCAPED_JSON_TEMP_FILE" ] || ! jq -e '.patterns' "$ESCAPED_JSON_TEMP_FILE" >/dev/null 2>&1; then
+        echo "Warning: Downloaded JSON file validation failed. The patterns array might be missing."
+        echo "Attempting to fetch pattern directories directly from GitHub..."
+        # Try to get pattern directories directly from GitHub API
             GITHUB_API_REPO_CONTENTS="https://api.github.com/repos/danielmiessler/fabric/contents/patterns"
             PATTERN_DIR_TEMP_FILE="/tmp/fabric_pattern_dirs.json"
             
